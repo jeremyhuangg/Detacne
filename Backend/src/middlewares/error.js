@@ -4,7 +4,7 @@ import { ClientError } from '../exceptions/index.js';
 const ErrorHandler = (err, req, res, next) => {
     // Handle ClientError and its subclasses (InvariantError, NotFoundError)
     if(err instanceof ClientError) {
-        return response(res, err.statuCode, err.message, null);
+        return response(res, err.statusCode, err.message, null);
     }
     // Handle Joi validation errors
     if(err.isJoi) {
