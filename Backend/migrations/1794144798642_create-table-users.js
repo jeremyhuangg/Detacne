@@ -40,7 +40,7 @@ export const up = (pgm) => {
             notNull: true,
             default: false,
         },
-        roles: {
+        role: {
             type: 'VARCHAR(20)',
             notNull: true,
             default: 'user',

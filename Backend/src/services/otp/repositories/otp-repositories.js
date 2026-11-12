@@ -13,11 +13,11 @@ class OtpRepositories {
 
         const hashedOtp = await bcrypt.hash(otp, saltRound);
 
-        const createdAt = Date.now();
-        const expiredAt = createdAt + 3600000;
+        const createdAt = new Date();
+        const expiredAt = new Date(createdAt.getTime() + 300000);
 
         const query = {
-            text: 'INSERT INTO otps VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
+            text: 'INSERT INTO otps(id, user_id, otp, created_at, expired_at) VALUES($1, $2, $3, $4, $5) RETURNING id',
             values: [id, userId, hashedOtp, createdAt, expiredAt],
         };
 
@@ -27,12 +27,12 @@ class OtpRepositories {
     
     async verifyOtpCredential(userId, otp){
         const query = {
-            text: 'SELECT id, otp, expired_at FROM otps WHERE user_id = $1',
+            text: 'SELECT id, otp, expired_at, consumed_at FROM otps WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
             values: [userId],
         };
 
         const otps = await this.pool.query(query);
-        if(!otps.rows.length || Date.now() > otps.rows[0].expired_at || otps.rows[0].consumed_at !== null){
+        if(!otps.rows.length || new Date() >= otps.rows[0].expired_at || otps.rows[0].consumed_at !== null){
             return null;
         }
 
@@ -44,14 +44,13 @@ class OtpRepositories {
     }
 
     async updateConsumedOtp(id){
-        const consumedAt = Date.now()
+        const consumedAt = new Date();
         const query = {
-            text: 'UPDATE otps SET consumed_at = $1 WHERE id = $1',
+            text: 'UPDATE otps SET consumed_at = $1 WHERE id = $2',
             values: [consumedAt, id],
         };
 
-        const result = await this.pool.query(query);
-        return result.rows[0];
+        await this.pool.query(query);
     }
 
     async verifyAvailableOtp(userId){ 
@@ -64,20 +63,29 @@ class OtpRepositories {
         return result.rows.length > 0;
     }
 
-    async resendOtp(userId, otp){
+    async resendOtp(userId, otp){ 
         const saltRound = 10;
         const hashedOtp = await bcrypt.hash(otp, saltRound);
 
-        const createdAt = Date.now();
-        const expiredAt = createdAt + 3600000;
+        const createdAt = new Date();
+        const expiredAt = new Date(createdAt.getTime() + 300000);
 
-        const query = { // harus updated untuk created sama expirednya juga
-            text: 'UPDATE otps SET otp = $1, created_at = $2, expired_at = $3 WHERE user_id = $4 RETURNING id',
+        const query = { 
+            text: 'UPDATE otps SET otp = $1, created_at = $2, expired_at = $3, consumed_at = NULL WHERE user_id = $4 RETURNING id',
             values: [hashedOtp, createdAt, expiredAt, userId],
         };
 
         const result = await this.pool.query(query);
         return result.rows[0];
+    }
+
+    async deleteOtp(id) {
+        const query = {
+            text: 'DELETE FROM otps WHERE id = $1',
+            values: [id],
+        };
+
+        await this.pool.query(query);
     }
 };
 

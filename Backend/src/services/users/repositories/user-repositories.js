@@ -12,7 +12,7 @@ class UserRepositories {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const query = {
-            text: 'INSERT INTO users VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
+            text: 'INSERT INTO users(id, nickname, email, password, gender, date_of_birth) VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
             values: [id, nickname, email, hashedPassword, gender, dateOfBirth],
         };
 
@@ -34,6 +34,16 @@ class UserRepositories {
         const query = {
             text: 'SELECT id, nickname, email, gender, date_of_birth FROM users WHERE id = $1',
             values: [id],
+        };
+
+        const result = await this.pool.query(query);
+        return result.rows[0];
+    }
+
+    async getUserByEmail(email) {
+        const query = {
+            text: 'SELECT id, is_verified FROM users WHERE email = $1',
+            values: [email],
         };
 
         const result = await this.pool.query(query);

@@ -23,21 +23,22 @@ export const up = (pgm) => {
             notNull: true,
         },
         created_at: {
-            type: 'TIMESTAMP',
+            type: 'TIMESTAMP WITH TIME ZONE',
             notNull: true,
         },
         expired_at: {
-            type: 'TIMESTAMP',
+            type: 'TIMESTAMP WITH TIME ZONE',
             notNull: true,
         },
         consumed_at: {
-            type: 'TIMESTAMP',
+            type: 'TIMESTAMP WITH TIME ZONE',
             notNull: false,
             default: null,
         },
     });
 
     pgm.addConstraint('otps', 'fk_otps.user_id_users.id', 'FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE');
+    pgm.addConstraint('otps', 'unique_user_id', 'UNIQUE(user_id)');
 };
 
 /**
