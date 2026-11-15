@@ -7,7 +7,7 @@ export class User {
     this.name = name
     this.email = email
     this.password = password
-    this.gender = gender // Boolean: true = Laki-laki, false = Perempuan
+    this.gender = gender
     this.DOB = DOB
     this.role = role
     this.createdAt = createdAt

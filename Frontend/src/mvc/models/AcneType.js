@@ -11,7 +11,6 @@ export class AcneType {
   }
 }
 
-// Katalog jenis jerawat (isi dari ACNE_INFO lama)
 export const ACNE_TYPES = {
   papula: new AcneType({ acneTypeId: 1, name: 'Papula', characteristics: 'Jerawat meradang, tanpa nanah', description: 'Benjolan kecil kemerahan yang teraba keras dan tidak berisi nanah. Sebaiknya tidak dipencet agar radang tidak makin parah.' }),
   pustula: new AcneType({ acneTypeId: 2, name: 'Pustula', characteristics: 'Jerawat meradang, berisi nanah', description: 'Mirip papula, tetapi ada nanah putih atau kekuningan di ujungnya dan kulit sekitarnya kemerahan. Memencetnya bisa memicu infeksi dan bekas.' }),

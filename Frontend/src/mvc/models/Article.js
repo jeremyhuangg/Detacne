@@ -7,7 +7,7 @@ export class Article {
     this.content = content
     this.imagePath = imagePath
     this.publishDate = publishDate
-    this.extra = extra // category, desc, read, status, featured
+    this.extra = extra
   }
 
   static fromApi(a = {}) {

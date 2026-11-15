@@ -8,7 +8,6 @@ export class DetectionController {
     this.lastResult = null
   }
 
-  // Mengembalikan pesan error, atau '' jika gambar valid
   validateImage(image) {
     if (!image) return 'Pilih foto terlebih dahulu.'
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(image.type)) return 'Format belum didukung. Gunakan JPG, PNG, atau WEBP.'

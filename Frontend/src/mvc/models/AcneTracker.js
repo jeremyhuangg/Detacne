@@ -6,7 +6,7 @@ export class AcneTracker {
     this.userId = userId
     this.date = date
     this.acneCount = acneCount
-    this.extra = extra // severity, counts, boxes, photo, note
+    this.extra = extra
   }
 
   static fromEntry(e = {}) {

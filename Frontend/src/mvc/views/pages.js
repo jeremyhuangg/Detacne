@@ -1,5 +1,3 @@
-// View layer: nama class, atribut, dan method mengikuti class diagram.
-// Manipulasi DOM yang besar didelegasikan ke `ui` (hook dari app.js).
 
 export class LoginPage {
   constructor(ui, auth) {

@@ -5,7 +5,7 @@ export class SkincareRoutine {
     this.routineId = routineId
     this.userId = userId
     this.createdAt = createdAt
-    this.steps = steps // 1..* RoutineStep
+    this.steps = steps
   }
 
   createRoutine(list, routine) {

@@ -6,7 +6,6 @@ export class RoutineStep {
     this.timeOfUse = timeOfUse
   }
 
-  // Satu langkah = satu item rutinitas di UI (name -> productName, time -> timeOfUse)
   static fromTask(t) {
     return new RoutineStep({ stepId: t.id, routineId: t.routineId || 0, productName: t.name, timeOfUse: t.time })
   }

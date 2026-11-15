@@ -5,7 +5,6 @@ export async function boot() {
   const state = { route: "home", photoUrl: "", photoName: "", analysisTimer: null, user: JSON.parse(localStorage.getItem("detacneUser") || "null"), articleCategory: "Semua", selectedDate: new Date((new Date()).getFullYear(), (new Date()).getMonth(), (new Date()).getDate()), calendarMonth: new Date((new Date()).getFullYear(), (new Date()).getMonth(), 1), tasks: JSON.parse(localStorage.getItem("detacneTasksV2") || "{}"), routines: JSON.parse(localStorage.getItem("detacneRoutinesV2") || "null") || [], reminders: JSON.parse(localStorage.getItem("detacneReminders") || '{"morning":"06:30","night":"20:30","am":true,"pm":true}') };
   let articles = [];
   const BASE_ARTICLES = [];
-  // ===== MVC (nama class/atribut/method mengikuti class diagram) =====
   const auth = new MVC.AuthController(), detectionCtl = new MVC.DetectionController(), trackerCtl = new MVC.TrackerController(), routineCtl = new MVC.RoutineController(), articleCtl = new MVC.ArticleController(), adminCtl = new MVC.AdminArticleController(), homeCtl = new MVC.HomeController({ articles: () => articles });
   const ui = {
     go: (r) => go(r),

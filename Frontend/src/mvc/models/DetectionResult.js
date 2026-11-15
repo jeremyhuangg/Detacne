@@ -7,7 +7,7 @@ export class DetectionResult {
     this.detectionId = detectionId
     this.acneType = acneType
     this.recomendation = recomendation
-    this.raw = raw // payload API asli (counts, total, severity, boxes)
+    this.raw = raw
   }
 
   static fromApi(r = {}) {
