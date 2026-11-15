@@ -1,9 +1,29 @@
 import { api as API } from "../api";
+import * as MVC from "../mvc";
 export async function boot() {
   const $ = (s) => document.querySelector(s), $$ = (s) => Array.from(document.querySelectorAll(s));
   const state = { route: "home", photoUrl: "", photoName: "", analysisTimer: null, user: JSON.parse(localStorage.getItem("detacneUser") || "null"), articleCategory: "Semua", selectedDate: new Date((new Date()).getFullYear(), (new Date()).getMonth(), (new Date()).getDate()), calendarMonth: new Date((new Date()).getFullYear(), (new Date()).getMonth(), 1), tasks: JSON.parse(localStorage.getItem("detacneTasksV2") || "{}"), routines: JSON.parse(localStorage.getItem("detacneRoutinesV2") || "null") || [], reminders: JSON.parse(localStorage.getItem("detacneReminders") || '{"morning":"06:30","night":"20:30","am":true,"pm":true}') };
   let articles = [];
   const BASE_ARTICLES = [];
+  // ===== MVC (nama class/atribut/method mengikuti class diagram) =====
+  const auth = new MVC.AuthController(), detectionCtl = new MVC.DetectionController(), trackerCtl = new MVC.TrackerController(), routineCtl = new MVC.RoutineController(), articleCtl = new MVC.ArticleController(), adminCtl = new MVC.AdminArticleController(), homeCtl = new MVC.HomeController({ articles: () => articles });
+  const ui = {
+    go: (r) => go(r),
+    toast: (m) => toast(m),
+    scrollTo: (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }),
+    validateRegister: (f) => validateRegister(f),
+    normEmail: (v) => normEmail(v),
+    onAuthSuccess: (user, msg) => authDone({ user: JSON.parse(localStorage.getItem("detacneUser") || "null") }, msg),
+    setText: (id, t) => { const e = document.getElementById(id); if (e) e.textContent = t; },
+    renderTrackerPreview: (t) => { state.trackerPreview = t; },
+    renderRoutinePreview: () => {},
+    isRoutineToday: (t) => rPeriod(t) === "Pagi" && rOn(t, state.selectedDate),
+    renderResult: (r) => renderResult(r),
+    renderProgress: () => renderProgress(),
+    renderChart: () => renderChart(),
+    renderRoutine: () => renderRoutine()
+  };
+  const loginPage = new MVC.LoginPage(ui, auth), registerPage = new MVC.RegisterPage(ui, auth), homePage = new MVC.HomePage(ui, homeCtl), detectionPage = new MVC.DetectionPage(ui, detectionCtl), resultPage = new MVC.ResultPage(ui, trackerCtl), trackerPage = new MVC.TrackerPage(ui, trackerCtl), routinePage = new MVC.RoutinePage(ui, routineCtl), articlePage = new MVC.ArticlePage(ui, articleCtl), adminPage = new MVC.AdminArticlePage(ui, adminCtl), aboutUsPage = new MVC.AboutUsPage(ui);
   const ACNE_COL = { papula: "#d9777f", pustula: "#e6a35c", komedo: "#8f7fb8", nodul: "#b5476b", kista: "#7a4a8c" };
   function renderAcneInfo(r) {
     const box = $("#acneInfo");
@@ -116,7 +136,7 @@ export async function boot() {
     const ok = await recordEntry(r);
     state.saving = false;
     if (ok) {
-      API.saveEntry(r.id).catch(() => {
+      resultPage.saveToTracker(state.user?.id, r).catch(() => {
       });
       state.saveChoice = { id: r.id, v: "saved" };
     }
@@ -231,10 +251,10 @@ export async function boot() {
       renderArticles();
     }
     if (r === "routine") {
-      renderRoutine();
+      routinePage.showRoutine(state.user?.id);
       renderRemindUI();
     }
-    if (r === "progress") renderProgress();
+    if (r === "progress") trackerPage.showTracker(state.user?.id);
     if (r === "results") renderResultsRoute();
     window.scrollTo({ top: 0, behavior: "instant" });
     setTimeout(revealInit, 30);
@@ -253,17 +273,11 @@ export async function boot() {
   };
   $("#loginForm").addEventListener("submit", (e) => {
     e.preventDefault();
-    const d = new FormData(e.currentTarget);
-    API.login({ email: d.get("email"), password: d.get("password") }).then((r) => authDone(r, "Berhasil masuk.")).catch((err) => toast(err.message));
+    loginPage.submitLogin(e.currentTarget);
   });
   $("#registerForm").addEventListener("submit", (e) => {
     e.preventDefault();
-    const d = new FormData(e.currentTarget);
-    if (!validateRegister(e.currentTarget)) {
-      toast("Periksa kembali isian yang ditandai.");
-      return;
-    }
-    API.register({ name: d.get("name").trim().replace(/\s+/g, " "), email: normEmail(d.get("email")), password: d.get("password"), gender: d.get("gender"), birthdate: d.get("birthdate") }).then((r) => authDone(r, "Akun berhasil dibuat.")).catch((err) => toast(err.message));
+    registerPage.submitRegister(e.currentTarget);
   });
   const admLog = () => {
     try {
@@ -437,8 +451,8 @@ export async function boot() {
     {
       const E = state.entries || [], A = act(), L = A[A.length - 1];
       $("#dashDate").textContent = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(state.selectedDate);
-      $("#dsCount").textContent = E.length;
-      $("#dsCountNote").textContent = E.length ? "Tersimpan di browser ini" : "Belum ada pemeriksaan";
+      homePage.displayDetectionCount();
+      homePage.displayTrackerPreview();
       $("#dsSev").textContent = L ? L.severity : "-";
       $("#dsSevDate").textContent = L ? fmtD(L.ts) : "Belum ada data";
       $("#lastTitle").textContent = L ? "Catatan kulit \u2014 " + fmtD(L.ts, { day: "numeric", month: "long", year: "numeric" }) : "Belum ada pemeriksaan";
@@ -447,8 +461,9 @@ export async function boot() {
       if (L) $("#lastBtn").dataset.go = "results?entry=" + encodeURIComponent(L.id);
     }
     let name = state.user?.name || "Teman";
-    $("#userGreeting").textContent = name;
-    const tasks = state.routines.filter((t) => rPeriod(t) === "Pagi" && rOn(t, state.selectedDate)).slice(0, 3);
+    homePage.displayGreeting();
+    homePage.displayRoutinePreview();
+    const tasks = homePage.routinePreview;
     $("#dashboardTasks").innerHTML = tasks.map((t) => `<label class="check-row"><input type="checkbox" data-task="${esc(t.id)}" ${taskDone(t.id) ? "checked" : ""}><span class="task">${esc(t.name)}</span><small>${esc(t.time)}</small></label>`).join("") || '<p class="small muted">Belum ada rutinitas. Tambahkan di halaman Rutinitas.</p>';
     $$("#dashboardTasks [data-task]").forEach((c) => c.addEventListener("change", () => setTask(c.dataset.task, c.checked)));
     let done = tasks.filter((t) => taskDone(t.id)).length;
@@ -510,16 +525,9 @@ export async function boot() {
   }
   function acceptFile(file) {
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast("Format belum didukung. Gunakan JPG, PNG, atau WEBP.");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast("Ukuran foto melebihi 10 MB.");
-      return;
-    }
+    if (!detectionPage.selectImage(file)) return;
     if (state.photoUrl && state.photoUrl.startsWith("blob:")) URL.revokeObjectURL(state.photoUrl);
-    state.photoUrl = URL.createObjectURL(file);
+    state.photoUrl = detectionPage.previewImage;
     state.photoName = file.name;
     state.photoFile = file;
     preview.src = state.photoUrl;
@@ -563,9 +571,10 @@ export async function boot() {
         }
       }
     }, 105);
-    API.detect(state.photoFile).then((res) => {
+    detectionPage.imageFile = state.photoFile;
+    detectionPage.uploadImage().then((res) => {
       if (state.analysisRun !== run) return;
-      state.pending = res;
+      state.pending = res.getResult();
       done = true;
     }).catch((err) => {
       if (state.analysisRun !== run) return;
@@ -871,9 +880,7 @@ export async function boot() {
     if (byDate) r.dates = dts;
     const old = state.routines.find((t) => t.id === id);
     if (old && old.skip && !byDate) r.skip = old.skip;
-    const i = state.routines.findIndex((t) => t.id === id);
-    if (i > -1) state.routines[i] = r;
-    else state.routines.push(r);
+    state.routines = state.routines.some((t) => t.id === id) ? routinePage.updateRoutine(r) : routinePage.createRoutine(r);
     if (byDate) {
       const q = dts[0].split("-").map(Number);
       state.selectedDate = new Date(q[0], q[1] - 1, q[2]);
@@ -897,7 +904,7 @@ export async function boot() {
       if (confirm('Hapus "' + r.name + '" hanya untuk ' + lbl + "? Hari lainnya tidak terpengaruh.")) {
         if (r.dates) {
           r.dates = r.dates.filter((x) => x !== dk);
-          if (!r.dates.length) state.routines = state.routines.filter((t) => t.id !== id);
+          if (!r.dates.length) state.routines = routinePage.deleteRoutine(id);
         } else {
           r.skip = [...new Set([...r.skip || [], dk])];
         }
@@ -1144,6 +1151,7 @@ export async function boot() {
       const x = state.entries.find((t) => t.id === d.dataset.ed);
       if (x && confirm("Hapus catatan " + fmtD(x.ts) + "?")) {
         state.entries = state.entries.filter((t) => t.id !== x.id);
+        trackerPage.deleteTracker(state.user?.id, x.id);
         saveEntries();
         renderProgress();
         toast("Catatan dihapus.");
@@ -1171,7 +1179,7 @@ export async function boot() {
       renderProgress();
     }
   });
-  $("#chartPeriod").addEventListener("change", renderChart);
+  $("#chartPeriod").addEventListener("change", () => trackerPage.filterPeriod());
   $("#exportHistory").addEventListener("click", () => state.entries.length ? downloadFile("detacne-riwayat.csv", entriesCsv()) : downloadFile("detacne-riwayat-demo.csv", "Tanggal,Jumlah contoh,Keparahan,Catatan\n28 Okt 2026,12,Ringan,Simulasi\n28 Sep 2026,15,Sedang,Simulasi\n28 Agu 2026,17,Sedang,Simulasi\n28 Jul 2026,21,Perlu dipantau,Simulasi"));
   function downloadFile(filename, text) {
     const a = document.createElement("a");
@@ -1450,14 +1458,12 @@ export async function boot() {
     }
     if (e.target.closest("#takePhoto,#retakePhoto")) openCamera();
     const s = e.target.closest("[data-scroll]");
-    if (s) document.getElementById(s.dataset.scroll)?.scrollIntoView({ behavior: "smooth" });
+    if (s) s.dataset.scroll === "cara-kerja" ? aboutUsPage.displayAboutUs() : document.getElementById(s.dataset.scroll)?.scrollIntoView({ behavior: "smooth" });
   });
   $("#logoutBtn").addEventListener("click", () => {
     state.user = null;
     state.next = null;
-    API.logout();
-    localStorage.removeItem("detacneUser");
-    localStorage.removeItem("detacneToken");
+    auth.logout();
     toast("Kamu sudah keluar.");
     location.hash = "#/";
     showRoute("home");
@@ -2077,6 +2083,8 @@ ${edit ? "" : `<p class="small" style="margin-top:14px"><a href="#/articles" dat
       const i = articles.findIndex((x) => x.id === dl.dataset.delArticle);
       if (i >= 0 && confirm('Hapus artikel "' + articles[i].title + '"?')) {
         logAct("Menghapus artikel: " + articles[i].title);
+        adminPage.deleteArticle(articles[i].id).catch(() => {
+        });
         articles.splice(i, 1);
         saveArticles();
         closeModal();
@@ -2118,6 +2126,11 @@ ${edit ? "" : `<p class="small" style="margin-top:14px"><a href="#/articles" dat
         Object.assign(a, f);
       } else articles.unshift({ ...f, id: "c" + Date.now().toString(36), emoji: "pen", custom: true, date: todayKey() });
       logAct((sv.dataset.mode === "edit" ? "Mengubah artikel: " : "Menambah artikel: ") + t);
+      {
+        const rec = sv.dataset.mode === "edit" ? articles.find((x) => x.id === sv.dataset.saveArticle) : articles[0];
+        if (rec) (sv.dataset.mode === "edit" ? adminPage.updateArticle(MVC.Article.fromApi(rec)) : adminPage.createArticle(MVC.Article.fromApi(rec))).catch(() => {
+        });
+      }
       saveArticles();
       closeModal();
       renderArticles();
@@ -2196,5 +2209,5 @@ ${edit ? "" : `<p class="small" style="margin-top:14px"><a href="#/articles" dat
   routeFromHash();
   renderCalendar();
   renderArticles();
-  API.articles.list().then((l) => { articles = l; renderArticles(); }).catch(() => {});
+  articlePage.showArticleList().then((l) => { articles = l.map((a) => a.toApi()); renderArticles(); }).catch(() => {});
 }
