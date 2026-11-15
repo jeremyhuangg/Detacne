@@ -588,10 +588,6 @@ export async function boot() {
     go("detect");
   });
   $("#simulateError")?.addEventListener("click", () => go("error"));
-  $("#downloadReport").addEventListener("click", () => {
-    const r = state.histView || state.result || { severity: "Ringan", total: 12, counts: { papula: 5, pustula: 3, komedo: 4 } };
-    downloadFile("detacne-ringkasan.txt", "DETACNE - Ringkasan hasil\nTanggal: " + new Date(r.created_at || Date.now()).toLocaleDateString("id-ID") + "\nTingkat keparahan: " + r.severity + "\nTotal terdeteksi: " + r.total + "\n" + Object.entries(r.counts).map(([k, v]) => k + ": " + v).join("\n"));
-  });
   function renderArticles() {
     renderLayout();
     const q = ($("#articleSearch")?.value || "").toLowerCase();
