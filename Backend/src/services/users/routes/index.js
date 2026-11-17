@@ -7,6 +7,6 @@ const router = Router();
 
 router.post('/users', validate(userPayloadSchema), userController.createUser);
 router.get('/users/:id', userController.getUserById);
-router.get('/users/change-password', validate(changePasswordPayloadSchema), userController.changePassword);
+router.put('/users/change-password', validate(changePasswordPayloadSchema), userController.changePassword);
 
 export default router;
