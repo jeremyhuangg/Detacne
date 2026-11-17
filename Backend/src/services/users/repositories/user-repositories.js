@@ -68,6 +68,24 @@ class UserRepositories {
         return id;
     }
 
+    async verifyUserPassword(id, password){
+        const query = {
+            text: 'SELECT password FROM users WHERE id = $1',
+            values: [id],
+        };
+
+        const user = await this.pool.query(query);
+        if(!user.rows.length) {
+            return null;
+        }
+
+        const { password: hashedPassword } = user.rows[0];
+        const isPasswordMatch = await bcrypt.compare(password, hashedPassword);
+
+        if(!isPasswordMatch) return false;
+        return true;
+    }
+
     async verifyVerfiedUser(id) {
         const query = {
             text: 'SELECT is_verified FROM users WHERE id = $1',
@@ -82,6 +100,18 @@ class UserRepositories {
         const query = {
             text: 'UPDATE users SET is_verified = true WHERE id = $1 RETURNING id',
             values: [id],
+        };
+
+        const result = await this.pool.query(query);
+        return result.rows[0];
+    }
+
+    async changePassword(id, password){
+        const hashedPassword = bcrypt.hash(password, 10);
+
+        const query = {
+            text: 'UPDATE users SET password = $1 WHERE id = $2',
+            values: [hashedPassword, id],
         };
 
         const result = await this.pool.query(query);

@@ -7,3 +7,8 @@ export const userPayloadSchema = Joi.object({
     gender: Joi.string().valid('male', 'female').required(),
     dateOfBirth: Joi.date().iso().max('now').required(),
 });
+
+export const changePasswordPayloadSchema = Joi.object({
+    oldPassword: Joi.string().min(8).pattern(/^(?=.*\p{L})(?=.*\d).+$/u).required(),
+    newPassword: Joi.string().min(8).pattern(/^(?=.*\p{L})(?=.*\d).+$/u).required(),
+});

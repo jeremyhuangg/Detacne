@@ -1,6 +1,6 @@
 import UserRepositories from '../repositories/user-repositories.js';
 import response from '../../../utils/response.js';
-import { InvariantError, NotFoundError } from '../../../exceptions/index.js';
+import { AuthenticationError, InvariantError, NotFoundError } from '../../../exceptions/index.js';
 
 class UserController{
     async createUser(req, res, next) {
@@ -35,6 +35,25 @@ class UserController{
         }
 
         return response(res, 200, 'User berhasil ditampilkan', { user: user });
+    }
+
+    async changePassword(req, res, next) {
+        const { id } = req.user;
+        const { oldPassword, newPassword } = req.validated;
+
+        const isOldPasswordCorrect = await UserRepositories.verifyUserPassword(id, oldPassword);
+        
+        if(!isOldPasswordCorrect) {
+            return next(new AuthenticationError('Kredensial yang Anda berikan salah'));
+        }
+
+        const reset = await UserRepositories.changePassword(id, newPassword);
+
+        if(!reset){
+            return next(new NotFoundError('User tidak ditemukan'));
+        }
+
+        return response(res, 200, 'Password berhasil diperbarui.');
     }
 }
 
