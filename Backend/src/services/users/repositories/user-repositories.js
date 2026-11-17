@@ -107,10 +107,10 @@ class UserRepositories {
     }
 
     async changePassword(id, password){
-        const hashedPassword = bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const query = {
-            text: 'UPDATE users SET password = $1 WHERE id = $2',
+            text: 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id',
             values: [hashedPassword, id],
         };
 
