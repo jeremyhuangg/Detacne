@@ -1,6 +1,6 @@
 const response = (res, statusCode, message, data) => {
     return res
-    .statusCode(statusCode)
+    .status(statusCode)
     .json({
         code: statusCode,
         status: statusCode < 400 ? 'success' : 'fail',
