@@ -13,14 +13,30 @@ export class LoginPage {
 
   async submitLogin(form) {
     const d = new FormData(form)
-    this.email = d.get('email')
+    this.email = this.ui.normEmail(d.get('email'))
     this.password = d.get('password')
+    await this.signIn()
+  }
+
+  async signIn() {
     try {
       const user = await this.auth.login(this.email, this.password)
       this.ui.onAuthSuccess(user, 'Berhasil masuk.')
     } catch (err) {
+      if (err.status === 403) return this.verifyFirst()
       this.showError(err.message)
     }
+  }
+
+  // Akun belum diverifikasi: kirim kode OTP, lalu coba masuk lagi setelah kode benar.
+  async verifyFirst() {
+    try {
+      await this.auth.sendOtp(this.email)
+    } catch (err) {
+      return this.showError(err.message)
+    }
+    this.ui.toast('Akun belum diverifikasi. Kami mengirim kode ke emailmu.')
+    this.ui.askOtp(this.email, () => this.signIn())
   }
 
   showError(message) {
@@ -55,15 +71,29 @@ export class RegisterPage {
     this.gender = d.get('gender') === 'Laki-laki'
     this.DOB = d.get('birthdate')
     try {
-      const user = await this.auth.register(this.name, this.email, this.password, this.gender, this.DOB)
-      this.showSuccess(user)
+      await this.auth.register(this.name, this.email, this.password, this.gender, this.DOB)
     } catch (err) {
       this.ui.toast(err.message)
+      return
     }
+    try {
+      await this.auth.sendOtp(this.email)
+      this.ui.toast('Akun dibuat. Kami mengirim kode verifikasi ke emailmu.')
+    } catch {
+      this.ui.toast('Akun dibuat, tapi kode belum terkirim. Tekan "Kirim ulang kode".')
+    }
+    this.ui.askOtp(this.email, () => this.showSuccess())
   }
 
-  showSuccess(user) {
-    this.ui.onAuthSuccess(user, 'Akun berhasil dibuat.')
+  // Setelah kode benar, langsung masuk dengan email dan kata sandi yang baru diisi.
+  async showSuccess() {
+    try {
+      const user = await this.auth.login(this.email, this.password)
+      this.ui.onAuthSuccess(user, 'Akun berhasil dibuat.')
+    } catch {
+      this.ui.toast('Akun sudah aktif. Silakan masuk.')
+      this.ui.go('login')
+    }
   }
 }
 

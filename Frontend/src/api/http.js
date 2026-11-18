@@ -9,9 +9,11 @@ export class ApiError extends Error {
   }
 }
 
-export async function request(path, { method = 'GET', body, form, query, signal } = {}) {
+// Backend selalu membalas { code, status, message, data }.
+// request() mengembalikan isi "data", dan melempar ApiError berisi "message" kalau gagal.
+export async function request(path, { method = 'GET', body, form, query, signal, auth = true } = {}) {
   const headers = { Accept: 'application/json' }
-  const token = session.getToken()
+  const token = auth ? session.getToken() : null
   if (token) headers.Authorization = `Bearer ${token}`
 
   let payload = form
@@ -34,18 +36,13 @@ export async function request(path, { method = 'GET', body, form, query, signal 
     clearTimeout(timer)
   }
 
-  const data = res.status === 204 ? {} : await res.json().catch(() => ({}))
-
+  const json = res.status === 204 ? {} : await res.json().catch(() => ({}))
   if (!res.ok) {
     if (res.status === 401 && token) {
       session.clear()
       window.dispatchEvent(new Event('auth:expired'))
     }
-    throw new ApiError(
-      data.error?.code || 'SERVER',
-      data.error?.message || 'Terjadi kesalahan pada server.',
-      res.status
-    )
+    throw new ApiError(String(res.status), json.message || 'Terjadi kesalahan pada server.', res.status)
   }
-  return data
+  return json.data ?? {}
 }

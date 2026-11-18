@@ -12,6 +12,7 @@ export async function boot() {
     scrollTo: (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }),
     validateRegister: (f) => validateRegister(f),
     normEmail: (v) => normEmail(v),
+    askOtp: (email, onVerified) => openOtp(email, onVerified),
     onAuthSuccess: (user, msg) => authDone({ user: JSON.parse(localStorage.getItem("detacneUser") || "null") }, msg),
     setText: (id, t) => { const e = document.getElementById(id); if (e) e.textContent = t; },
     renderTrackerPreview: (t) => { state.trackerPreview = t; },
@@ -1186,6 +1187,32 @@ export async function boot() {
     setTimeout(() => URL.revokeObjectURL(a.href), 500);
     toast("File berhasil disiapkan.");
   }
+  function openOtp(email, onVerified) {
+    openModal("Verifikasi email", `<p class="small">Kami mengirim kode 6 angka ke <b>${esc(email)}</b>. Kode berlaku 5 menit. Cek juga folder spam.</p><form id="otpForm" novalidate><label class="form-field"><span>Kode verifikasi</span><input class="input" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 angka" required><small class="field-err"></small></label><button class="btn btn-primary" style="width:100%" type="submit">Verifikasi</button><button class="btn btn-ghost" style="width:100%;margin-top:8px" type="button" id="otpResend">Kirim ulang kode</button></form>`);
+    const f = $("#otpForm"), field = f.elements.otp.closest(".form-field"), msg = f.querySelector(".field-err");
+    const fail = (m) => {
+      msg.textContent = m;
+      field.classList.add("bad");
+    };
+    f.elements.otp.focus();
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = f.elements.otp.value.trim();
+      if (!/^\d{6}$/.test(code)) return fail("Kode harus 6 angka.");
+      msg.textContent = "";
+      field.classList.remove("bad");
+      try {
+        await auth.verifyOtp(email, code);
+      } catch (err) {
+        return fail(err.message || "Kode tidak valid.");
+      }
+      closeModal();
+      onVerified();
+    });
+    $("#otpResend").addEventListener("click", () => {
+      auth.sendOtp(email).then(() => toast("Kode baru sudah dikirim ke emailmu.")).catch((err) => toast(err.message || "Gagal mengirim kode."));
+    });
+  }
   function openModal(title, html) {
     $("#modalTitle").textContent = title;
     $("#modalContent").innerHTML = html;
@@ -1510,7 +1537,7 @@ export async function boot() {
       if (!t) m = "Nama panggilan wajib diisi.";
       else if (t.length < 2) m = "Minimal 2 huruf.";
       else if (t.length > 250) m = "Maksimal 250 karakter.";
-      else if (!NAME_RE.test(t)) m = "Hanya huruf dan spasi, tanpa angka atau simbol.";
+      else if (!NAME_RE.test(t)) m = "Hanya huruf, tanpa spasi, angka, atau simbol.";
       f.querySelector(".field-err").textContent = m;
       f.elements.name.closest(".form-field").classList.toggle("bad", !!m);
       if (m) return;
@@ -1525,7 +1552,7 @@ export async function boot() {
       toast("Nama panggilan berhasil diubah.");
     });
   });
-  const NAME_RE = /^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u, EMAIL_RE = /^[a-z0-9]+(?:[._%+-][a-z0-9]+)*@[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\.[a-z]{2,}$/i;
+  const NAME_RE = /^\p{L}+$/u, EMAIL_RE = /^[a-z0-9]+(?:[._%+-][a-z0-9]+)*@[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\.[a-z]{2,}$/i;
   function normEmail(v) {
     return String(v || "").trim().toLowerCase();
   }
@@ -1557,7 +1584,7 @@ export async function boot() {
       if (!t) return "Nama panggilan wajib diisi.";
       if (t.length < 2) return "Minimal 2 huruf.";
       if (t.length > 250) return "Maksimal 250 karakter.";
-      if (!NAME_RE.test(t)) return "Hanya huruf dan spasi, tanpa angka atau simbol.";
+      if (!NAME_RE.test(t)) return "Hanya huruf, tanpa spasi, angka, atau simbol.";
     } else if (n === "gender") {
       if (!v) return "Pilih jenis kelamin.";
     } else if (n === "birthdate") {
@@ -1609,7 +1636,7 @@ export async function boot() {
   function forgotSent(em) {
     const tok = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
     state.resetEmail = em;
-    openModal("Cek emailmu", `<p class="small">Kami mengirim tautan reset ke <b>${esc(em)}</b>. Tautan berlaku 30 menit. Cek juga folder spam.</p>` + (false ? `<div class="mail-demo"><div class="mail-head"><span>Dari: DETACNE &lt;no-reply@detacne.id&gt;</span><span>Ke: ${esc(em)}</span><b>Atur ulang kata sandi DETACNE</b></div><div class="mail-body"><p>Halo,</p><p>Kami menerima permintaan untuk mengatur ulang kata sandi akunmu. Klik tombol di bawah untuk membuat kata sandi baru. Tautan ini berlaku 30 menit.</p><span class="btn btn-primary">Atur ulang kata sandi</span><p class="small">Kalau bukan kamu yang meminta, abaikan email ini. Kata sandimu tidak berubah.</p></div></div><p class="small">Ini hanya contoh tampilan email, karena di demo belum ada email yang benar-benar dikirim.</p><button class="btn btn-primary" style="width:100%" id="openResetDemo" type="button">Buka tautan reset (demo)</button>` : ""));
+    openModal("Cek emailmu", `<p class="small">Jika <b>${esc(em)}</b> terdaftar, tautan reset sudah kami kirim ke sana. Tautan berlaku 15 menit. Cek juga folder spam.</p>` + (false ? `<div class="mail-demo"><div class="mail-head"><span>Dari: DETACNE &lt;no-reply@detacne.id&gt;</span><span>Ke: ${esc(em)}</span><b>Atur ulang kata sandi DETACNE</b></div><div class="mail-body"><p>Halo,</p><p>Kami menerima permintaan untuk mengatur ulang kata sandi akunmu. Klik tombol di bawah untuk membuat kata sandi baru. Tautan ini berlaku 30 menit.</p><span class="btn btn-primary">Atur ulang kata sandi</span><p class="small">Kalau bukan kamu yang meminta, abaikan email ini. Kata sandimu tidak berubah.</p></div></div><p class="small">Ini hanya contoh tampilan email, karena di demo belum ada email yang benar-benar dikirim.</p><button class="btn btn-primary" style="width:100%" id="openResetDemo" type="button">Buka tautan reset (demo)</button>` : ""));
     const b = $("#openResetDemo");
     if (b) b.addEventListener("click", () => {
       closeModal();
@@ -1634,8 +1661,14 @@ export async function boot() {
       toast("Periksa kembali isian yang ditandai.");
       return;
     }
-    API.resetPassword({ token: new URLSearchParams(state.hashQ || "").get("token") || "", email: state.resetEmail || "", password: resetForm.elements.password.value }).then(() => {
+    const token = new URLSearchParams(state.hashQ || "").get("token") || new URLSearchParams(location.search).get("token") || "";
+    if (!token) {
+      toast("Tautan reset tidak valid. Minta tautan baru lewat Lupa kata sandi.");
+      return;
+    }
+    API.resetPassword({ token, password: resetForm.elements.password.value }).then(() => {
       state.resetEmail = "";
+      if (location.search) history.replaceState(null, "", location.pathname + location.hash);
       toast("Kata sandi berhasil diubah.");
       go(state.user ? "dashboard" : "login");
     }).catch((err) => toast(err.message || "Gagal mengubah kata sandi."));
