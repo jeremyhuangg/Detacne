@@ -1,16 +1,23 @@
 import { request } from './http'
 
-const json = (method, path) => (body) => request(path, { method, body })
+const json = (method, path, auth = true) => (body) => request(path, { method, body, auth })
+const open = (method, path) => json(method, path, false)
 
 export const api = {
-  login: json('POST', '/auth/login'),
-  register: json('POST', '/auth/register'),
-  forgot: json('POST', '/auth/forgot-password'),
-  resetPassword: json('POST', '/auth/reset-password'),
-  logout: () => request('/auth/logout', { method: 'POST' }).catch(() => ({})),
-  me: () => request('/auth/me'),
-  updateProfile: json('PATCH', '/auth/me'),
-
+  // Auth (sesuai route Backend)
+  login: open('POST', '/authentications'),
+  register: open('POST', '/users'),
+  sendOtp: open('POST', '/users/registration-otp'),
+  verifyOtp: open('POST', '/users/registration-otp/verify'),
+  resendOtp: open('POST', '/users/registration-otp/resend'),
+  forgot: open('POST', '/forgot-password'),
+  resetPassword: open('POST', '/reset-password'),
+  changePassword: json('PUT', '/users/change-password'),
+  logout: (refreshToken) =>
+    refreshToken
+      ? request('/authentications', { method: 'DELETE', body: { refreshToken }, auth: false }).catch(() => ({}))
+      : Promise.resolve({}),
+  me: (id) => request(`/users/${encodeURIComponent(id)}`).then((r) => r.user),
   detect: (file) => {
     const form = new FormData()
     form.append('photo', file)
