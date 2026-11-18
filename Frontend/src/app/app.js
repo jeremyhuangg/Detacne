@@ -326,7 +326,7 @@ export async function boot() {
     const u = state.user, A = state.adm, tab = new URLSearchParams(state.hashQ || "").get("tab") || "ringkasan", T = ADM_TABS.find((x) => x[0] === tab) || ADM_TABS[0];
     $("#admNav").innerHTML = ADM_TABS.map(([k, l, i]) => `<button type="button" data-tab="${k}" class="${k === T[0] ? "on" : ""}">${icon(i, 18)}<span>${l}</span></button>`).join("");
     $("#admTitle").textContent = T[1];
-    $("#admUser").innerHTML = `<div><b>${esc(u?.name || "Admin")}</b><small>Administrator</small></div><div class="profile" id="admProfile"><button class="profile-btn" id="admProfileBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu profil"><span>${esc(String(u?.name || "A").trim().split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase() || "A")}</span></button><div class="profile-menu" id="admProfileMenu" role="menu"><div class="profile-head"><strong>${esc(u?.name || "Admin")}</strong><small>${esc(u?.email || "")}</small></div><button type="button" role="menuitem" data-admforgot>Lupa kata sandi</button><button type="button" role="menuitem" class="danger" data-admout>Keluar</button></div></div>`;
+    $("#admUser").innerHTML = `<div><b>${esc(u?.name || "Admin")}</b><small>Administrator</small></div><div class="profile" id="admProfile"><button class="profile-btn" id="admProfileBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu profil"><span>${esc(String(u?.name || "A").trim().split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase() || "A")}</span></button><div class="profile-menu" id="admProfileMenu" role="menu"><div class="profile-head"><strong>${esc(u?.name || "Admin")}</strong><small>${esc(u?.email || "")}</small></div><button type="button" role="menuitem" data-admpass>Ubah kata sandi</button><button type="button" role="menuitem" class="danger" data-admout>Keluar</button></div></div>`;
     $("#admBody").innerHTML = { ringkasan: admOverview, artikel: admArticlesTab, aktivitas: admActivity }[T[0]]();
     if (T[0] === "artikel") {
       $("#admSt").value = A.st;
@@ -351,9 +351,9 @@ export async function boot() {
       $("#logoutBtn").click();
       return;
     }
-    if (e.target.closest("[data-admforgot]")) {
+    if (e.target.closest("[data-admpass]")) {
       admMenu(false);
-      $("#forgotBtn").click();
+      $("#passBtn").click();
       return;
     }
     if (!e.target.closest("#admProfile")) admMenu(false);
@@ -1524,7 +1524,6 @@ export async function boot() {
       API.forgot({ email: em }).then(() => forgotSent(normEmail(em))).catch((err) => toast(err.message || "Gagal mengirim tautan."));
     });
   }
-  $("#forgotBtn").addEventListener("click", () => openForgot(state.user?.email || ""));
   $("#loginForgot").addEventListener("click", (e) => {
     e.preventDefault();
     openForgot($("#loginForm").elements.email.value);
