@@ -326,7 +326,7 @@ export async function boot() {
     const u = state.user, A = state.adm, tab = new URLSearchParams(state.hashQ || "").get("tab") || "ringkasan", T = ADM_TABS.find((x) => x[0] === tab) || ADM_TABS[0];
     $("#admNav").innerHTML = ADM_TABS.map(([k, l, i]) => `<button type="button" data-tab="${k}" class="${k === T[0] ? "on" : ""}">${icon(i, 18)}<span>${l}</span></button>`).join("");
     $("#admTitle").textContent = T[1];
-    $("#admUser").innerHTML = `<div><b>${esc(u?.name || "Admin")}</b><small>Administrator</small></div><div class="profile" id="admProfile"><button class="profile-btn" id="admProfileBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu profil"><span>${esc(String(u?.name || "A").trim().split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase() || "A")}</span></button><div class="profile-menu" id="admProfileMenu" role="menu"><div class="profile-head"><strong>${esc(u?.name || "Admin")}</strong><small>${esc(u?.email || "")}</small></div><button type="button" role="menuitem" data-admforgot>Lupa kata sandi</button><button type="button" role="menuitem" class="danger" data-admout>Keluar</button></div></div>`;
+    $("#admUser").innerHTML = `<div><b>${esc(u?.name || "Admin")}</b><small>Administrator</small></div><div class="profile" id="admProfile"><button class="profile-btn" id="admProfileBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu profil"><span>${esc(String(u?.name || "A").trim().split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase() || "A")}</span></button><div class="profile-menu" id="admProfileMenu" role="menu"><div class="profile-head"><strong>${esc(u?.name || "Admin")}</strong><small>${esc(u?.email || "")}</small></div><button type="button" role="menuitem" data-admpass>Ubah kata sandi</button><button type="button" role="menuitem" class="danger" data-admout>Keluar</button></div></div>`;
     $("#admBody").innerHTML = { ringkasan: admOverview, artikel: admArticlesTab, aktivitas: admActivity }[T[0]]();
     if (T[0] === "artikel") {
       $("#admSt").value = A.st;
@@ -351,9 +351,9 @@ export async function boot() {
       $("#logoutBtn").click();
       return;
     }
-    if (e.target.closest("[data-admforgot]")) {
+    if (e.target.closest("[data-admpass]")) {
       admMenu(false);
-      $("#forgotBtn").click();
+      $("#passBtn").click();
       return;
     }
     if (!e.target.closest("#admProfile")) admMenu(false);
@@ -1515,13 +1515,59 @@ export async function boot() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeProfileMenu();
   });
-  $("#forgotBtn").addEventListener("click", () => {
+  function openForgot(prefill = "") {
     closeProfileMenu();
-    openModal("Lupa kata sandi", `<p class="small">Masukkan email akunmu. Kami akan mengirim tautan untuk mengatur ulang kata sandi.</p><form id="forgotForm"><label class="form-field"><span>Email</span><input class="input" type="email" name="email" required value="${esc(state.user?.email || "")}" placeholder="nama@email.com"></label><button class="btn btn-primary" style="width:100%" type="submit">Kirim tautan reset</button></form>${false ? '<p class="form-help">Demo: tidak ada email yang benar-benar dikirim.</p>' : ""}`);
+    openModal("Lupa kata sandi", `<p class="small">Masukkan email akunmu. Kami akan mengirim tautan untuk mengatur ulang kata sandi.</p><form id="forgotForm"><label class="form-field"><span>Email</span><input class="input" type="email" name="email" required value="${esc(prefill)}" placeholder="nama@email.com"></label><button class="btn btn-primary" style="width:100%" type="submit">Kirim tautan reset</button></form>`);
     $("#forgotForm").addEventListener("submit", (e) => {
       e.preventDefault();
       const em = new FormData(e.currentTarget).get("email");
       API.forgot({ email: em }).then(() => forgotSent(normEmail(em))).catch((err) => toast(err.message || "Gagal mengirim tautan."));
+    });
+  }
+  $("#loginForgot").addEventListener("click", (e) => {
+    e.preventDefault();
+    openForgot($("#loginForm").elements.email.value);
+  });
+  $("#passBtn").addEventListener("click", () => {
+    closeProfileMenu();
+    openModal("Ubah kata sandi", `<form id="passForm" novalidate><label class="form-field"><span>Kata sandi saat ini</span><input class="input" type="password" name="old" autocomplete="current-password"><small class="field-err"></small></label><label class="form-field"><span>Kata sandi baru</span><input class="input" type="password" name="password" autocomplete="new-password" placeholder="Min. 8 karakter, huruf dan angka"><small class="field-err"></small></label><label class="form-field"><span>Konfirmasi kata sandi baru</span><input class="input" type="password" name="confirm" autocomplete="new-password" placeholder="Ulangi kata sandi"><small class="field-err"></small></label><button class="btn btn-primary" style="width:100%" type="submit">Simpan kata sandi baru</button></form>`);
+    const f = $("#passForm");
+    f.elements.old.focus();
+    f.addEventListener("focusout", (e) => {
+      const n = e.target.name;
+      if (n === "password" || n === "confirm") regCheck(f, n);
+    });
+    f.addEventListener("input", (e) => {
+      const n = e.target.name, lab = e.target.closest(".form-field");
+      if (!n || !lab) return;
+      if (n === "old") {
+        lab.classList.remove("bad");
+        lab.querySelector(".field-err").textContent = "";
+        return;
+      }
+      if (lab.classList.contains("bad")) regCheck(f, n);
+      if (n === "password" && f.elements.confirm.value) regCheck(f, "confirm");
+    });
+    f.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const lab = f.elements.old.closest(".form-field");
+      const oldOk = !!f.elements.old.value;
+      lab.classList.toggle("bad", !oldOk);
+      lab.querySelector(".field-err").textContent = oldOk ? "" : "Kata sandi saat ini wajib diisi.";
+      const a = regCheck(f, "password"), b = regCheck(f, "confirm");
+      if (!(oldOk && a && b)) return;
+      if (f.elements.password.value === f.elements.old.value) {
+        const l2 = f.elements.password.closest(".form-field");
+        l2.classList.add("bad");
+        l2.querySelector(".field-err").textContent = "Kata sandi baru harus berbeda dari yang lama.";
+        return;
+      }
+      API.changePassword({ oldPassword: f.elements.old.value, newPassword: f.elements.password.value })
+        .then(() => {
+          closeModal();
+          toast("Kata sandi berhasil diubah.");
+        })
+        .catch((err) => toast(err.message || "Gagal mengubah kata sandi."));
     });
   });
   $("#nickBtn").addEventListener("click", () => {
