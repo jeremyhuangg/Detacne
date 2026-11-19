@@ -32,7 +32,7 @@ class UserRepositories {
 
     async getUserById(id) {
         const query = {
-            text: 'SELECT id, nickname, email, gender, date_of_birth FROM users WHERE id = $1',
+            text: 'SELECT id, nickname, email, gender, date_of_birth, role FROM users WHERE id = $1',
             values: [id],
         };
 
@@ -112,6 +112,16 @@ class UserRepositories {
         const query = {
             text: 'UPDATE users SET password = $1 WHERE id = $2 RETURNING id',
             values: [hashedPassword, id],
+        };
+
+        const result = await this.pool.query(query);
+        return result.rows[0];
+    }
+
+    async changeNickname(id, nickname){
+        const query = {
+            text: 'UPDATE users SET nickname = $1 WHERE id = $2 RETURNING id',
+            values: [nickname, id],
         };
 
         const result = await this.pool.query(query);

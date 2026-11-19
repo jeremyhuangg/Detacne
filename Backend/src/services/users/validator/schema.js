@@ -1,7 +1,7 @@
 import Joi from 'joi';
 
 export const userPayloadSchema = Joi.object({
-    nickname: Joi.string().min(2).max(250).pattern(/^\p{L}+$/u).required(),
+    nickname: Joi.string().min(2).max(250).pattern(/^[\p{L} ]+$/u).required(),
     email: Joi.string().email().max(254).required(),
     password: Joi.string().min(8).pattern(/^(?=.*\p{L})(?=.*\d).+$/u).required(),
     gender: Joi.string().valid('male', 'female').required(),
@@ -21,3 +21,7 @@ export const resetPasswordPayloadSchema = Joi.object({
     token: Joi.string().length(64).hex().required(),
     password: Joi.string().min(8).pattern(/^(?=.*\p{L})(?=.*\d).+$/u).required(),
 });
+
+export const changeNicknamePayloadSchema = Joi.object({
+    nickname: Joi.string().min(2).max(250).pattern(/^[\p{L} ]+$/u).required(),
+})

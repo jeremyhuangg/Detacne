@@ -55,6 +55,19 @@ class UserController{
 
         return response(res, 200, 'Password berhasil diperbarui.');
     }
+
+    async changeNickname(req, res, next) {
+        const { id } = req.user;
+        const { nickname } = req.validated;
+
+        const change = await UserRepositories.changeNickname(id, nickname);
+
+        if(!change) {
+            return next(new NotFoundError('User tidak ditemukan'));
+        }
+
+        return response(res, 200, 'Nickname berhasil diperbarui.');
+    }
 }
 
 export default new UserController;
