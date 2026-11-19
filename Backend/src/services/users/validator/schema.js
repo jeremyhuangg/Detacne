@@ -21,3 +21,7 @@ export const resetPasswordPayloadSchema = Joi.object({
     token: Joi.string().length(64).hex().required(),
     password: Joi.string().min(8).pattern(/^(?=.*\p{L})(?=.*\d).+$/u).required(),
 });
+
+export const changeNicknamePayloadSchema = Joi.object({
+    nickname: Joi.string().min(2).max(250).pattern(/^[\p{L} ]+$/u).required(),
+})
