@@ -117,6 +117,16 @@ class UserRepositories {
         const result = await this.pool.query(query);
         return result.rows[0];
     }
+
+    async changeNickname(id, nickname){
+        const query = {
+            text: 'UPDATE users SET nickname = $1 WHERE id = $2 RETURNING id',
+            values: [nickname, id],
+        };
+
+        const result = await this.pool.query(query);
+        return result.rows[0];
+    }
 }
 
 export default new UserRepositories;
