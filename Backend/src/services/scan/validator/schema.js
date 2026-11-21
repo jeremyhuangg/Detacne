@@ -8,3 +8,7 @@ export const scanPayloadSchema = Joi.object({
     size: Joi.number().positive().max(5 * 1024 * 1024).required(),
     buffer: Joi.binary().required(),
 }).required().unknown(true);
+
+export const savePayloadSchema = Joi.object({
+
+});
