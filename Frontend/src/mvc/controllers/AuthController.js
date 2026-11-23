@@ -13,12 +13,10 @@ export class AuthController {
     return user
   }
 
-  // Hanya membuat akun. Akun baru harus diverifikasi lewat kode OTP sebelum bisa login.
   async register(name, email, password, gender, DOB) {
     return new User({ name, email, password, gender, DOB }).register()
   }
 
-  // Minta kode OTP. Kalau backend bilang kode sudah pernah dibuat (409), kirim ulang saja.
   async sendOtp(email) {
     try {
       await api.sendOtp({ email })

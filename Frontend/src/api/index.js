@@ -4,7 +4,6 @@ const json = (method, path, auth = true) => (body) => request(path, { method, bo
 const open = (method, path) => json(method, path, false)
 
 export const api = {
-  // Auth (sesuai route Backend)
   login: open('POST', '/authentications'),
   register: open('POST', '/users'),
   sendOtp: open('POST', '/users/registration-otp'),

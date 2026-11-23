@@ -24,7 +24,6 @@ export const session = {
   }
 }
 
-// Membaca isi (payload) JWT tanpa verifikasi. Backend menaruh { id } di access token.
 export function tokenPayload(token) {
   try {
     const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')

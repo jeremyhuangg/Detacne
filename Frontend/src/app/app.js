@@ -24,11 +24,13 @@ export async function boot() {
     renderRoutine: () => renderRoutine()
   };
   const loginPage = new MVC.LoginPage(ui, auth), registerPage = new MVC.RegisterPage(ui, auth), homePage = new MVC.HomePage(ui, homeCtl), detectionPage = new MVC.DetectionPage(ui, detectionCtl), resultPage = new MVC.ResultPage(ui, trackerCtl), trackerPage = new MVC.TrackerPage(ui, trackerCtl), routinePage = new MVC.RoutinePage(ui, routineCtl), articlePage = new MVC.ArticlePage(ui, articleCtl), adminPage = new MVC.AdminArticlePage(ui, adminCtl), aboutUsPage = new MVC.AboutUsPage(ui);
-  const ACNE_COL = { papula: "#d9777f", pustula: "#e6a35c", komedo: "#8f7fb8", nodul: "#b5476b", kista: "#7a4a8c" };
+  const ACNE_COL = { papules: "#d9777f", pustules: "#e6a35c", blackheads: "#8f7fb8", whiteheads: "#7fa6c9", cyst: "#7a4a8c" };
+  const { acneKey, normalizeAcneCounts: normCounts } = MVC;
+  const acneName = (l) => { const k = acneKey(l); return k ? ACNE_INFO[k].n : l; };
   function renderAcneInfo(r) {
     const box = $("#acneInfo");
     if (!box) return;
-    const cnt = r.counts || {}, keys = Object.keys(cnt).filter((k) => Number(cnt[k]) > 0 && ACNE_INFO[k.toLowerCase()]).sort((a, b) => Number(cnt[b]) - Number(cnt[a])), tot = keys.reduce((a, k) => a + Number(cnt[k]), 0), col = (k) => ACNE_COL[k.toLowerCase()] || "#b5476b";
+    const cnt = normCounts(r.counts), keys = Object.keys(cnt).filter((k) => Number(cnt[k]) > 0 && ACNE_INFO[k.toLowerCase()]).sort((a, b) => Number(cnt[b]) - Number(cnt[a])), tot = keys.reduce((a, k) => a + Number(cnt[k]), 0), col = (k) => ACNE_COL[k.toLowerCase()] || "#b5476b";
     const head = '<div class="section-head"><div><h2>Jerawat yang terdeteksi</h2><p>Penjelasan singkat tiap jenis jerawat pada hasil ini.</p></div></div>';
     if (!keys.length || !Number(r.total)) {
       box.innerHTML = head + '<div class="ai-none"><div class="ic-wrap"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></div><div><b>Tidak ada jerawat terdeteksi</b><p>Pada foto ini tidak ditemukan jerawat. Tetap jaga kebersihan wajah, pakai pelembap dan tabir surya, lalu periksa lagi secara berkala.</p></div></div>';
@@ -44,11 +46,9 @@ export async function boot() {
     renderBahan(r);
     renderAcneInfo(r);
     $("#mockNotice")?.classList.toggle("hidden", true);
-    const sv = r.severity === "Perlu dipantau" ? "Berat" : r.severity;
-    $$("#sevBar span").forEach((s) => s.classList.toggle("on", s.textContent.toLowerCase() === String(sv).toLowerCase()));
-    $("#typeBody").innerHTML = Object.entries(r.counts || {}).map(([k, v]) => `<tr><td>${esc(k.charAt(0).toUpperCase() + k.slice(1))}</td><td style="text-align:right">${Number(v)}</td></tr>`).join("") + `<tr><td><b>Total terdeteksi</b></td><td style="text-align:right"><b>${Number(r.total)}</b></td></tr>`;
+    $("#typeBody").innerHTML = Object.entries(normCounts(r.counts)).filter(([, v]) => Number(v) > 0).map(([k, v]) => `<tr><td>${esc(ACNE_INFO[k].n)}</td><td style="text-align:right">${Number(v)}</td></tr>`).join("") + `<tr><td><b>Total terdeteksi</b></td><td style="text-align:right"><b>${Number(r.total)}</b></td></tr>`;
     const bx = r.boxes || [];
-    $("#resultFace").innerHTML = o.photo ? `<div class="photo-wrap"><img src="${o.photo}" alt="Foto yang dianalisis">${bx.map((b) => `<div class="pbox" style="left:${b.x * 100}%;top:${b.y * 100}%;width:${b.w * 100}%;height:${b.h * 100}%"><span>${esc(b.label)}</span></div>`).join("")}</div>` : faceSVG({ marks: Math.min(r.total, 12), boxes: bx.map((b) => ({ x: b.x * 300, y: b.y * 340, w: b.w * 300, h: b.h * 340, l: b.label, d: 0 })) });
+    $("#resultFace").innerHTML = o.photo ? `<div class="photo-wrap"><img src="${o.photo}" alt="Foto yang dianalisis">${bx.map((b) => `<div class="pbox" style="left:${b.x * 100}%;top:${b.y * 100}%;width:${b.w * 100}%;height:${b.h * 100}%"><span>${esc(acneName(b.label))}</span></div>`).join("")}</div>` : faceSVG({ marks: Math.min(r.total, 12), boxes: bx.map((b) => ({ x: b.x * 300, y: b.y * 340, w: b.w * 300, h: b.h * 340, l: acneName(b.label), d: 0 })) });
   }
   const curPhoto = () => state.photoFile && state.photoUrl ? state.photoUrl : "";
   function renderResult(r) {
@@ -62,8 +62,8 @@ export async function boot() {
   }
   const DEMO_HIST = [];
   function demoResult(d) {
-    const p = Math.round(d.total * 0.42), u = Math.round(d.total * 0.25);
-    return { severity: d.severity, total: d.total, counts: { papula: p, pustula: u, komedo: d.total - p - u }, boxes: DEF_BOXES, created_at: d.ts + "T00:00:00" };
+    const p = Math.round(d.total * 0.42), u = Math.round(d.total * 0.25), b = d.total - p - u;
+    return { severity: d.severity, total: d.total, counts: { papules: p, pustules: u, blackheads: Math.ceil(b / 2), whiteheads: Math.floor(b / 2) }, boxes: DEF_BOXES, created_at: d.ts + "T00:00:00" };
   }
   const RES_SUB = $("#resSub").textContent;
   function updateSaveCard() {
@@ -112,13 +112,10 @@ export async function boot() {
     }
     state.histMode = !!h;
     state.histView = h ? h.r : null;
-    $("#careSections").classList.toggle("hidden", !!h);
     $("#addRoutineLink").classList.toggle("hidden", !!h);
-    $("#histNote").classList.toggle("hidden", !(h && h.e));
     if (h) {
       paintResult(h.r, { photo: h.photo });
       $("#resSub").textContent = h.sub;
-      if (h.e) $("#histNoteText").value = h.e.note || "";
     } else {
       paintResult(state.result || { severity: "", total: 0, counts: {}, boxes: [] }, { photo: curPhoto() });
       $("#resSub").textContent = RES_SUB;
@@ -161,16 +158,6 @@ export async function boot() {
     }
     addToProgress();
   });
-  $("#histNoteSave").addEventListener("click", () => {
-    const x = state.histMode && new URLSearchParams(state.hashQ || "").get("entry");
-    const en = x && state.entries.find((t) => t.id === x);
-    if (!en) return;
-    en.note = $("#histNoteText").value.trim();
-    if (saveEntries()) {
-      toast("Catatan disimpan.");
-      renderProgress();
-    }
-  });
   function icon(n, s = 18) {
     return `<svg class="ic" width="${s}" height="${s}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
   }
@@ -178,7 +165,7 @@ export async function boot() {
     return icon(n, s || 56);
   }
   const MARKS = [[122, 118], [176, 114], [100, 196], [112, 224], [90, 212], [198, 198], [206, 226], [184, 216], [150, 262], [130, 256], [172, 252], [150, 128]];
-  const HBOX = [{ x: 104, y: 104, w: 38, h: 32, l: "Papula", d: 1 }, { x: 80, y: 188, w: 48, h: 48, l: "Pustula", d: 2 }, { x: 176, y: 186, w: 46, h: 52, l: "Papula", d: 2.1 }, { x: 116, y: 242, w: 68, h: 30, l: "Komedo", d: 2.7 }];
+  const HBOX = [{ x: 104, y: 104, w: 38, h: 32, l: "Papula", d: 1 }, { x: 80, y: 188, w: 48, h: 48, l: "Pustula", d: 2 }, { x: 176, y: 186, w: 46, h: 52, l: "Papula", d: 2.1 }, { x: 116, y: 242, w: 68, h: 30, l: "Komedo hitam", d: 2.7 }];
   const RBOX = HBOX.map((b) => ({ ...b, d: 0 }));
   const DEF_BOXES = HBOX.map((b) => ({ label: b.l, x: b.x / 300, y: b.y / 340, w: b.w / 300, h: b.h / 340, score: 0.9 }));
   function faceSVG({ marks = 0, boxes = [], scan = false } = {}) {
@@ -981,7 +968,7 @@ export async function boot() {
     if (state.entries.some((e) => e.id === id)) return true;
     const photo = await (state.resultThumb || Promise.resolve(""));
     if (state.entries.some((e) => e.id === id)) return true;
-    state.entries.push({ id, ts: r.created_at || (new Date()).toISOString(), total: r.total, severity: r.severity, counts: r.counts, boxes: r.boxes || null, photo, note: "" });
+    state.entries.push({ id, ts: r.created_at || (new Date()).toISOString(), total: r.total, severity: r.severity, counts: normCounts(r.counts), boxes: r.boxes || null, photo, note: "" });
     state.entries.sort((a, b) => a.ts.localeCompare(b.ts));
     if (!saveEntries()) {
       state.entries = state.entries.filter((e) => e.id !== id);
@@ -1027,13 +1014,13 @@ export async function boot() {
   }
   const HIST_STEP = 3, SEV_COL = { Ringan: "#7fc8a0", Sedang: "#e6a35c" };
   function histCard(it) {
-    const dl = it.delta, dh = dl === null ? '<span class="hi-delta">Pemeriksaan pertama</span>' : dl === 0 ? '<span class="hi-delta">Sama seperti sebelumnya</span>' : `<span class="hi-delta ${dl < 0 ? "down" : "up"}">${dl < 0 ? "\u25BC Turun " : "\u25B2 Naik "}${Math.abs(dl)} dari sebelumnya</span>`, cap = (k) => k.charAt(0).toUpperCase() + k.slice(1), chips = Object.entries(it.counts).filter(([, v]) => Number(v) > 0).map(([c, v]) => `<span class="hi-chip"><i class="dot d-${esc(c.toLowerCase())}"></i>${esc(cap(c))} <b>${Number(v)}</b></span>`).join("") || '<span class="hi-chip">Tidak ada jerawat terdeteksi</span>', tm = it.real && /T\d\d:\d\d/.test(it.ts) && !/T00:00:00/.test(it.ts) ? `<span class="hi-time">pukul ${esc(fmtD(it.ts, { hour: "2-digit", minute: "2-digit" }))}</span>` : "", ph = it.photo ? `<img src="${it.photo}" alt="Foto pemeriksaan">` : it.real ? '<svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>' : `<i data-face="${Math.min(it.total, 12)}"></i>`, nt = it.note ? `<p class="hi-note has"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg><span>${esc(it.note)}</span></p>` : `<p class="hi-note"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg><span>Belum ada catatan</span></p>`, side = it.real ? `<label class="hi-use"><input type="checkbox" data-eu="${esc(it.id)}" ${it.use !== false ? "checked" : ""}><span class="sw"></span>Dipakai</label><div class="hi-actions"><button class="rt-btn" data-ed="${esc(it.id)}" type="button" aria-label="Hapus catatan">Hapus</button><button class="btn btn-primary" data-ev="${esc(it.id)}" type="button">Lihat</button></div>` : `<div class="hi-actions"><button class="btn btn-primary" data-demo="${it.idx}" type="button">Lihat</button></div>`;
+    const dl = it.delta, dh = dl === null ? '<span class="hi-delta">Pemeriksaan pertama</span>' : dl === 0 ? '<span class="hi-delta">Sama seperti sebelumnya</span>' : `<span class="hi-delta ${dl < 0 ? "down" : "up"}">${dl < 0 ? "\u25BC Turun " : "\u25B2 Naik "}${Math.abs(dl)} dari sebelumnya</span>`, cap = (k) => k.charAt(0).toUpperCase() + k.slice(1), chips = Object.entries(it.counts).filter(([, v]) => Number(v) > 0).map(([c, v]) => `<span class="hi-chip"><i class="dot d-${esc(c.toLowerCase())}"></i>${esc(acneName(c))} <b>${Number(v)}</b></span>`).join("") || '<span class="hi-chip">Tidak ada jerawat terdeteksi</span>', tm = it.real && /T\d\d:\d\d/.test(it.ts) && !/T00:00:00/.test(it.ts) ? `<span class="hi-time">pukul ${esc(fmtD(it.ts, { hour: "2-digit", minute: "2-digit" }))}</span>` : "", ph = it.photo ? `<img src="${it.photo}" alt="Foto pemeriksaan">` : it.real ? '<svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>' : `<i data-face="${Math.min(it.total, 12)}"></i>`, nt = it.note ? `<p class="hi-note has"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg><span>${esc(it.note)}</span></p>` : `<p class="hi-note"><svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg><span>Belum ada catatan</span></p>`, side = it.real ? `<label class="hi-use"><input type="checkbox" data-eu="${esc(it.id)}" ${it.use !== false ? "checked" : ""}><span class="sw"></span>Dipakai</label><div class="hi-actions"><button class="rt-btn" data-ed="${esc(it.id)}" type="button" aria-label="Hapus catatan">Hapus</button><button class="btn btn-primary" data-ev="${esc(it.id)}" type="button">Lihat</button></div>` : `<div class="hi-actions"><button class="btn btn-primary" data-demo="${it.idx}" type="button">Lihat</button></div>`;
     return `<article class="hist-item ${it.real && it.use === false ? "off" : ""}" style="--sc:${SEV_COL[it.severity] || "#d9777f"}"><div class="hi-photo">${ph}</div><div class="hi-main"><div class="hi-top"><span class="hi-date">${esc(fmtD(it.ts, { weekday: "long", day: "numeric", month: "long", year: "numeric" }))}</span>${tm}<span class="tag ${sevClass(it.severity)}">${esc(it.severity)}</span></div><div class="hi-stats"><div class="hi-total"><strong>${it.total}</strong><span>jerawat</span></div>${dh}</div><div class="hi-chips">${chips}</div>${nt}</div><div class="hi-side">${side}</div></article>`;
   }
   function renderHistory() {
     const real = state.entries.length > 0;
     let items;
-    if (real) items = state.entries.slice().sort((a, b) => a.ts.localeCompare(b.ts)).map((e) => ({ id: e.id, ts: e.ts, total: Number(e.total), severity: e.severity, counts: e.counts || {}, photo: e.photo, note: e.note, use: e.use, real: true }));
+    if (real) items = state.entries.slice().sort((a, b) => a.ts.localeCompare(b.ts)).map((e) => ({ id: e.id, ts: e.ts, total: Number(e.total), severity: e.severity, counts: normCounts(e.counts), photo: e.photo, note: e.note, use: e.use, real: true }));
     else items = DEMO_HIST.map((d, i) => ({ id: i, ts: d.ts + "T00:00:00", total: d.total, severity: d.severity, counts: demoResult(d).counts, photo: "", note: d.note, real: false, idx: i })).reverse();
     items.forEach((it, k) => {
       it.delta = k ? it.total - items[k - 1].total : null;
@@ -1163,7 +1150,7 @@ export async function boot() {
     }
   });
   function entriesCsv() {
-    return "Tanggal,Jumlah,Keparahan,Papula,Pustula,Komedo,Catatan\n" + state.entries.map((e) => ['"' + fmtD(e.ts) + '"', e.total, e.severity, e.counts?.papula ?? 0, e.counts?.pustula ?? 0, e.counts?.komedo ?? 0, '"' + String(e.note || "").replace(/"/g, '""') + '"'].join(",")).join("\n");
+    return "Tanggal,Jumlah,Keparahan,Papula,Pustula,Komedo hitam,Komedo putih,Kista,Catatan\n" + state.entries.map((e) => ['"' + fmtD(e.ts) + '"', e.total, e.severity, normCounts(e.counts).papules ?? 0, normCounts(e.counts).pustules ?? 0, normCounts(e.counts).blackheads ?? 0, normCounts(e.counts).whiteheads ?? 0, normCounts(e.counts).cyst ?? 0, '"' + String(e.note || "").replace(/"/g, '""') + '"'].join(",")).join("\n");
   }
   $("#histList").addEventListener("change", (e) => {
     const c = e.target.closest("[data-eu]");
@@ -1250,25 +1237,25 @@ export async function boot() {
   $("#howDash").innerHTML = HOW;
   fillFaces();
   const ACNE_INFO = {
-    papula: { n: "Papula", t: "Jerawat meradang, tanpa nanah", d: "Benjolan kecil kemerahan yang teraba keras dan tidak berisi nanah. Sebaiknya tidak dipencet agar radang tidak makin parah.", c: ["Pori tersumbat oleh minyak berlebih dan sel kulit mati", "Peradangan akibat bakteri penyebab jerawat (C. acnes)", "Perubahan hormon, misalnya saat pubertas, haid, atau stres", "Gesekan dari masker atau helm dan kebiasaan menyentuh wajah"] },
-    pustula: { n: "Pustula", t: "Jerawat meradang, berisi nanah", d: "Mirip papula, tetapi ada nanah putih atau kekuningan di ujungnya dan kulit sekitarnya kemerahan. Memencetnya bisa memicu infeksi dan bekas.", c: ["Radang aktif saat sistem imun melawan bakteri di pori tersumbat", "Produksi minyak berlebih yang menyumbat pori", "Memencet atau menggaruk jerawat yang sudah meradang", "Perubahan hormon dan stres", "Produk atau kosmetik yang menyumbat pori"] },
-    komedo: { n: "Komedo", t: "Jerawat tidak meradang", d: "Pori tersumbat minyak dan sel kulit mati tanpa peradangan berarti. Bisa terbuka (tampak hitam karena teroksidasi, bukan kotoran) atau tertutup (tampak putih kecil).", c: ["Produksi minyak berlebih", "Sel kulit mati yang menumpuk di dalam pori", "Kosmetik atau produk berbahan berat yang menyumbat pori", "Wajah kurang bersih, terutama setelah memakai makeup atau tabir surya"] },
-    nodul: { n: "Nodul", t: "Jerawat meradang berat, di bawah kulit", d: "Benjolan besar, keras, dan nyeri yang tumbuh lebih dalam di bawah kulit. Cenderung meninggalkan bekas, sebaiknya diperiksakan ke dokter kulit.", c: ["Peradangan yang menjalar ke lapisan kulit lebih dalam", "Faktor hormonal", "Faktor keturunan"] },
-    kista: { n: "Kista", t: "Jerawat meradang berat, berisi cairan", d: "Benjolan dalam berisi cairan atau nanah, nyeri, dan mudah meninggalkan bekas. Perlu penanganan dokter kulit.", c: ["Peradangan dalam yang parah", "Faktor hormonal", "Faktor keturunan"] }
+    papules: { n: "Papula", t: "Jerawat meradang, tanpa nanah", d: "Benjolan kecil kemerahan yang teraba keras dan tidak berisi nanah. Sebaiknya tidak dipencet agar radang tidak makin parah.", c: ["Pori tersumbat oleh minyak berlebih dan sel kulit mati", "Peradangan akibat bakteri penyebab jerawat (C. acnes)", "Perubahan hormon, misalnya saat pubertas, haid, atau stres", "Gesekan dari masker atau helm dan kebiasaan menyentuh wajah"] },
+    pustules: { n: "Pustula", t: "Jerawat meradang, berisi nanah", d: "Mirip papula, tetapi ada nanah putih atau kekuningan di ujungnya dan kulit sekitarnya kemerahan. Memencetnya bisa memicu infeksi dan bekas.", c: ["Radang aktif saat sistem imun melawan bakteri di pori tersumbat", "Produksi minyak berlebih yang menyumbat pori", "Memencet atau menggaruk jerawat yang sudah meradang", "Perubahan hormon dan stres", "Produk atau kosmetik yang menyumbat pori"] },
+    blackheads: { n: "Komedo hitam", t: "Jerawat tidak meradang, pori terbuka", d: "Pori tersumbat minyak dan sel kulit mati yang terbuka ke permukaan. Warna gelapnya berasal dari oksidasi, bukan kotoran.", c: ["Produksi minyak berlebih", "Sel kulit mati yang menumpuk di dalam pori", "Kosmetik atau produk berbahan berat yang menyumbat pori", "Wajah kurang bersih, terutama setelah memakai makeup atau tabir surya"] },
+    whiteheads: { n: "Komedo putih", t: "Jerawat tidak meradang, pori tertutup", d: "Pori tersumbat minyak dan sel kulit mati yang tertutup lapisan kulit, tampak sebagai bintik kecil putih atau sewarna kulit.", c: ["Produksi minyak berlebih", "Sel kulit mati yang menumpuk di dalam pori", "Kosmetik atau produk berbahan berat yang menyumbat pori", "Wajah kurang bersih, terutama setelah memakai makeup atau tabir surya"] },
+    cyst: { n: "Kista", t: "Jerawat meradang berat, berisi cairan", d: "Benjolan dalam berisi cairan atau nanah, nyeri, dan mudah meninggalkan bekas. Perlu penanganan dokter kulit.", c: ["Peradangan dalam yang parah", "Faktor hormonal", "Faktor keturunan"] }
   };
   const BAHAN = [
-    { n: "Salicylic acid (BHA)", f: "Pori tersumbat", d: "Larut dalam minyak sehingga membantu membersihkan isi pori. Cocok untuk komedo, mulai dari pemakaian bertahap.", u: "Kadar umum 0,5\u20132%", ic: "dropper", t: ["komedo", "papula"] },
-    { n: "Benzoyl peroxide", f: "Bakteri dan radang", d: "Membantu mengurangi bakteri penyebab jerawat meradang. Bisa membuat kulit kering dan memutihkan kain.", u: "Kadar umum 2,5\u20135%", ic: "flask", t: ["papula", "pustula"] },
-    { n: "Niacinamide", f: "Kemerahan dan minyak", d: "Membantu menenangkan kemerahan dan mengatur kilap minyak. Umumnya nyaman untuk kulit sensitif.", u: "Kadar umum 2\u20135%", ic: "dropper", t: ["papula", "pustula", "komedo"] },
-    { n: "Azelaic acid", f: "Radang dan noda bekas", d: "Membantu mengurangi radang dan noda kemerahan atau kecokelatan bekas jerawat. Kadar lebih tinggi umumnya perlu resep.", u: "Kadar umum sekitar 10%", ic: "flask", t: ["papula", "pustula"] },
-    { n: "Retinoid topikal (mis. adapalene)", f: "Pencegah sumbatan pori", d: "Membantu mencegah pori tersumbat dan melancarkan pergantian sel kulit. Umumnya dipakai atas saran dokter dan tidak untuk ibu hamil.", u: "Sesuai anjuran dokter", ic: "tube", t: ["komedo", "nodul", "kista"] }
+    { n: "Salicylic acid (BHA)", f: "Pori tersumbat", d: "Larut dalam minyak sehingga membantu membersihkan isi pori. Cocok untuk komedo, mulai dari pemakaian bertahap.", u: "Kadar umum 0,5\u20132%", ic: "dropper", t: ["blackheads", "whiteheads", "papules"] },
+    { n: "Benzoyl peroxide", f: "Bakteri dan radang", d: "Membantu mengurangi bakteri penyebab jerawat meradang. Bisa membuat kulit kering dan memutihkan kain.", u: "Kadar umum 2,5\u20135%", ic: "flask", t: ["papules", "pustules"] },
+    { n: "Niacinamide", f: "Kemerahan dan minyak", d: "Membantu menenangkan kemerahan dan mengatur kilap minyak. Umumnya nyaman untuk kulit sensitif.", u: "Kadar umum 2\u20135%", ic: "dropper", t: ["papules", "pustules", "blackheads", "whiteheads"] },
+    { n: "Azelaic acid", f: "Radang dan noda bekas", d: "Membantu mengurangi radang dan noda kemerahan atau kecokelatan bekas jerawat. Kadar lebih tinggi umumnya perlu resep.", u: "Kadar umum sekitar 10%", ic: "flask", t: ["papules", "pustules"] },
+    { n: "Retinoid topikal (mis. adapalene)", f: "Pencegah sumbatan pori", d: "Membantu mencegah pori tersumbat dan melancarkan pergantian sel kulit. Umumnya dipakai atas saran dokter dan tidak untuk ibu hamil.", u: "Sesuai anjuran dokter", ic: "tube", t: ["blackheads", "whiteheads", "cyst"] }
   ];
   const BAHAN_DASAR = [
     { n: "Ceramide, glycerin, hyaluronic acid", f: "Pelembap", d: "Menjaga lapisan pelindung kulit tetap sehat, penting saat memakai bahan aktif yang bisa mengeringkan.", u: "Pilih tekstur gel atau ringan", ic: "jar" },
     { n: "Tabir surya SPF 30+", f: "Perlindungan", d: "Pilih tekstur ringan berlabel non-comedogenic. Filter mineral seperti zinc oxide umumnya nyaman untuk kulit berjerawat.", u: "SPF 30 atau lebih", ic: "tube" }
   ];
   function renderBahan(r) {
-    const cnt = r.counts || {}, sc = (b) => b.t.reduce((a, t) => a + (Number(cnt[t]) || 0), 0), pick = BAHAN.filter((b) => sc(b) > 0).sort((a, b) => sc(b) - sc(a)).slice(0, 4);
+    const cnt = normCounts(r.counts), sc = (b) => b.t.reduce((a, t) => a + (Number(cnt[t]) || 0), 0), pick = BAHAN.filter((b) => sc(b) > 0).sort((a, b) => sc(b) - sc(a)).slice(0, 4);
     $("#ingredientGrid").innerHTML = pick.concat(BAHAN_DASAR).map((b) => `<article class="product ingredient"><span class="tag">${b.f}</span><h4>${b.n}</h4><p>${b.d}</p><div class="price">${b.u}</div></article>`).join("");
   }
   document.addEventListener("click", (e) => {

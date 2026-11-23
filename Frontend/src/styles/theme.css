@@ -895,16 +895,16 @@ body {
   background: #d9777f;
   display: inline-block;
 }
-.hi-chip .d-pustula {
+.hi-chip .d-pustules {
   background: #e6a35c;
 }
-.hi-chip .d-komedo {
+.hi-chip .d-blackheads {
   background: #8f7fb8;
 }
-.hi-chip .d-nodul {
-  background: #b5476b;
+.hi-chip .d-whiteheads {
+  background: #7fa6c9;
 }
-.hi-chip .d-kista {
+.hi-chip .d-cyst {
   background: #7a4a8c;
 }
 .hi-note {

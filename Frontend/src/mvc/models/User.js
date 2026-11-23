@@ -1,7 +1,6 @@
 import { api } from '../../api'
 import { session, tokenPayload } from '../../services/session'
 
-// Backend mengirim DATE sebagai ISO timestamp; ambil tanggal lokalnya (YYYY-MM-DD).
 const dateOnly = (v) => {
   if (!v) return null
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
@@ -17,13 +16,12 @@ export class User {
     this.name = name
     this.email = email
     this.password = password
-    this.gender = gender // true = laki-laki
+    this.gender = gender
     this.DOB = DOB
     this.role = role
     this.createdAt = createdAt
   }
 
-  // Menerima bentuk dari backend (nickname, date_of_birth) maupun bentuk yang disimpan di session.
   static fromApi(u = {}) {
     return new User({
       userId: u.id ?? u.userId ?? 0,
@@ -36,7 +34,6 @@ export class User {
     })
   }
 
-  // Payload untuk POST /users
   toApi() {
     return {
       nickname: this.name,
@@ -47,7 +44,6 @@ export class User {
     }
   }
 
-  // Bentuk yang disimpan di localStorage dan dipakai UI (state.user)
   toSession() {
     return {
       id: this.userId,

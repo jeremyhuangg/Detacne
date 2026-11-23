@@ -9,8 +9,6 @@ export class ApiError extends Error {
   }
 }
 
-// Backend selalu membalas { code, status, message, data }.
-// request() mengembalikan isi "data", dan melempar ApiError berisi "message" kalau gagal.
 export async function request(path, { method = 'GET', body, form, query, signal, auth = true } = {}) {
   const headers = { Accept: 'application/json' }
   const token = auth ? session.getToken() : null

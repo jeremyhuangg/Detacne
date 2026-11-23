@@ -28,7 +28,6 @@ export class LoginPage {
     }
   }
 
-  // Akun belum diverifikasi: kirim kode OTP, lalu coba masuk lagi setelah kode benar.
   async verifyFirst() {
     try {
       await this.auth.sendOtp(this.email)
@@ -85,7 +84,6 @@ export class RegisterPage {
     this.ui.askOtp(this.email, () => this.showSuccess())
   }
 
-  // Setelah kode benar, langsung masuk dengan email dan kata sandi yang baru diisi.
   async showSuccess() {
     try {
       const user = await this.auth.login(this.email, this.password)

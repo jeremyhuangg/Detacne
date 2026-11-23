@@ -1,7 +1,7 @@
 export { User } from './models/User'
 export { AcneDetection } from './models/AcneDetection'
 export { DetectionResult } from './models/DetectionResult'
-export { AcneType } from './models/AcneType'
+export { AcneType, ACNE_TYPES, acneKey, normalizeAcneCounts } from './models/AcneType'
 export { DetectedAcneType } from './models/DetectedAcneType'
 export { AcneTracker } from './models/AcneTracker'
 export { SkincareRoutine } from './models/SkincareRoutine'
