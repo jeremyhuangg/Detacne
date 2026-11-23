@@ -18,16 +18,17 @@ const validateQuery = (schema) => (req, res, next) => {
     const { error, value } = schema.validate(req.query, validationOption);
 
     if(error) return next(error);
-    req.validate = value;
+    req.validated = value;
     next();
 }
 
 const validateFile = (schema) => (req, res, next) => {
-    const { error, value } = schema.validate(req.query, validationOption);
+    const { error, value } = schema.validate(req.file, validationOption);
 
-    if(error) return next(error);
-    req.validate = value;
+    if (error) return next(error);
+
+    req.validated = { ...req.validated, photo: value };
     next();
-}
+};
 
 export { validate, validateQuery, validateFile };
