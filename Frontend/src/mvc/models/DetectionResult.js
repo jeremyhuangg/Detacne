@@ -1,4 +1,4 @@
-import { ACNE_TYPES } from './AcneType'
+import { ACNE_TYPES, normalizeAcneCounts } from './AcneType'
 import { DetectedAcneType } from './DetectedAcneType'
 
 export class DetectionResult {
@@ -11,7 +11,7 @@ export class DetectionResult {
   }
 
   static fromApi(r = {}) {
-    const counts = r.counts || {}
+    const counts = normalizeAcneCounts(r.counts)
     const top = Object.keys(counts).filter((k) => Number(counts[k]) > 0).sort((a, b) => Number(counts[b]) - Number(counts[a]))
     const res = new DetectionResult({ resultId: r.id ?? 0, detectionId: r.detection_id ?? r.id ?? 0, acneType: top.join(', '), raw: r })
     res.recomendation = res.generateRecomendation()
@@ -23,7 +23,7 @@ export class DetectionResult {
   }
 
   getDetectedTypes() {
-    return Object.keys(this.raw.counts || {})
+    return Object.keys(normalizeAcneCounts(this.raw.counts))
       .filter((k) => ACNE_TYPES[k])
       .map((k) => new DetectedAcneType({ resultId: this.resultId, acneTypeId: ACNE_TYPES[k].acneTypeId }))
   }
