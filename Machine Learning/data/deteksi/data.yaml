@@ -1,0 +1,7 @@
+# Dataset deteksi jerawat (1 kelas). Path relatif terhadap file ini.
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 1
+names: ['Acne']
