@@ -1,0 +1,5 @@
+model,val_akurasi,val_macro_F1,detik
+Random Forest,0.708,0.68,2
+Extra Trees,0.733,0.699,2
+Gradient Boosting,0.744,0.726,23
+Gabungan RF+ET+HGB,0.746,0.727,44

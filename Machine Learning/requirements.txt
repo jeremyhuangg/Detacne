@@ -1,0 +1,20 @@
+# Versi sama persis dengan yang dipakai saat melatih model (penting untuk file .joblib)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+torchvision==0.29.2+cpu
+ultralytics==8.4.193
+streamlit==1.66.1
+scikit-learn==1.9.1
+scikit-image==0.26.0
+scipy==1.17.1
+numpy==2.4.6
+pillow==13.0.0
+joblib==1.6.0
+pandas==3.1.1
+matplotlib==3.11.2
+# untuk menjalankan notebook di VS Code / Jupyter
+ipykernel==7.4.0
+# untuk API (src/api.py)
+fastapi==0.165.0
+uvicorn==0.54.0
+python-multipart==0.0.33
