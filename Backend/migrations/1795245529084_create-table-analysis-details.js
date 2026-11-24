@@ -24,6 +24,11 @@ export const up = (pgm) => {
             onUpdate: 'CASCADE',
             onDelete: 'CASCADE',
         },
+        jumlah: {
+            type: 'INTEGER',
+            notNull: true,
+            default: 0,
+        },
     });
 };
 

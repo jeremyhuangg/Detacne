@@ -28,6 +28,7 @@ class ScanController{
     async save (req, res, next) {
         const { imageKey, acne } = req.validated;
 
+        
     }
 };
 
