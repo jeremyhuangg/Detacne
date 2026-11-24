@@ -50,11 +50,7 @@ class ScanRepositories{
 
             await client.query('COMMIT');
 
-            return {
-                id: rows[0].id,
-                imageKey: rows[0].image_key,
-                date: rows[0].date,
-            };
+            return rows[0].id;
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
