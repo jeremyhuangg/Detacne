@@ -26,9 +26,16 @@ class ScanController{
     }
 
     async save (req, res, next) {
+        const { id: userId } = req.user;
         const { imageKey, acne } = req.validated;
 
-        
+        const result = await scanRepositories.saveScanResult(userId, imageKey, acne);
+
+        if(!result) {
+            return next(new InvariantError('Hasil scan gagal disimpan'));
+        }
+
+        response(res, 201, 'Hasil scan berhasil disimpan');
     }
 };
 
