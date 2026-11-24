@@ -1,0 +1,94 @@
+{
+ "asal": "jenis_v2",
+ "aturan": "kemiripan 32x32 >= 0.97 dan selisih warna rata-rata <= 5, atau kemiripan >= 0.995",
+ "jumlah": {
+  "train": {
+   "Blackheads": {
+    "v2": 1971,
+    "v3": 1971
+   },
+   "Cyst": {
+    "v2": 1130,
+    "v3": 1130
+   },
+   "Papules": {
+    "v2": 1845,
+    "v3": 1845
+   },
+   "Pustules": {
+    "v2": 1851,
+    "v3": 1851
+   },
+   "Whiteheads": {
+    "v2": 1821,
+    "v3": 1821
+   }
+  },
+  "val": {
+   "Blackheads": {
+    "v2": 245,
+    "v3": 185
+   },
+   "Cyst": {
+    "v2": 123,
+    "v3": 98
+   },
+   "Papules": {
+    "v2": 319,
+    "v3": 230
+   },
+   "Pustules": {
+    "v2": 269,
+    "v3": 174
+   },
+   "Whiteheads": {
+    "v2": 227,
+    "v3": 185
+   }
+  },
+  "test_potongan": {
+   "Blackheads": {
+    "v2": 221,
+    "v3": 171
+   },
+   "Cyst": {
+    "v2": 99,
+    "v3": 58
+   },
+   "Papules": {
+    "v2": 308,
+    "v3": 235
+   },
+   "Pustules": {
+    "v2": 257,
+    "v3": 171
+   },
+   "Whiteheads": {
+    "v2": 217,
+    "v3": 160
+   }
+  },
+  "test": {
+   "Blackheads": {
+    "v2": 22,
+    "v3": 22
+   },
+   "Cyst": {
+    "v2": 23,
+    "v3": 22
+   },
+   "Papules": {
+    "v2": 8,
+    "v3": 7
+   },
+   "Pustules": {
+    "v2": 10,
+    "v3": 9
+   },
+   "Whiteheads": {
+    "v2": 17,
+    "v3": 16
+   }
+  }
+ }
+}
