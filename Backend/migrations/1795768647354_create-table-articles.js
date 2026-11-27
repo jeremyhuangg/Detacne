@@ -18,7 +18,7 @@ export const up = (pgm) => {
             type: 'TEXT',
             notNull: true,
         },
-        kategory: {
+        kategori: {
             type: 'TEXT',
             notNull: true,
         },
@@ -32,7 +32,6 @@ export const up = (pgm) => {
         },
         foto: {
             type: 'TEXT',
-            notNull: true,
         },
         status_terbit: {
             type: 'BOOLEAN',
