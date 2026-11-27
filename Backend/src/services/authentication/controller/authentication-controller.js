@@ -19,8 +19,8 @@ class AuthenticationController{
             return next(new AuthorizationError('Akun belum terverifikasi')); // 403 forbidden
         }
 
-        const accessToken = TokenManager.generateAccessToken({ id: userId });
-        const refreshToken = TokenManager.generateRefreshToken({ id: userId });
+        const accessToken = TokenManager.generateAccessToken({ id: userId.id, role: userId.role });
+        const refreshToken = TokenManager.generateRefreshToken({ id: userId.id, role: userId.role });
 
         await AuthenticationRepositories.addRefreshToken(refreshToken);
 
@@ -39,8 +39,8 @@ class AuthenticationController{
             return next(new InvariantError('Refresh token tidak valid'));
         }
 
-        const { id } = TokenManager.verifyRefreshToken(refreshToken);
-        const accessToken = TokenManager.generateAccessToken({ id });
+        const { id, role } = TokenManager.verifyRefreshToken(refreshToken);
+        const accessToken = TokenManager.generateAccessToken({ id, role });
 
         return response(res, 200, 'Access Token berhasil diperbarui', { accessToken });
     }
